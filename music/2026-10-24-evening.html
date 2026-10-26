@@ -111,6 +111,23 @@ svg.score g.nh.hot{color:#b3121b} svg.score g.ls.hot{color:#b3121b;font-weight:b
 .st{margin:.5rem 0;padding:.35rem .5rem .35rem 1.7rem;position:relative;border-radius:5px;cursor:pointer;line-height:1.5}
 .st .sn{position:absolute;left:.45rem;top:.35rem;font-weight:bold;color:var(--red)}
 .st.cur{background:var(--hi);box-shadow:0 0 0 2px #f3c460}
+</style><!-- ben-phone-view --><style id="ben-phone">
+.zoomb{display:none}
+@media (max-width:700px){
+ body{font-size:17px}
+ main{padding-left:.5rem;padding-right:.5rem}
+ html,body{overflow-x:hidden}
+ .blk{margin-left:-.2rem;margin-right:-.2rem}
+ .hymn .bb{padding-left:0;padding-right:0}
+ .hymn .scorebox{width:calc(100vw - .2rem);margin-left:calc(50% - 50vw + .1rem);overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+ .hymn .scorebox svg.score{width:100%;min-width:0}
+ .hymn .scorebox.big svg.score{width:175%}
+ .zoomb{display:inline-block;font:inherit;font-size:.9rem;margin:.35rem .6rem .1rem;padding:.35rem .8rem;border:1px solid var(--red,#8b1a1a);border-radius:8px;background:#fff;color:var(--red,#8b1a1a);min-height:40px}
+ .hint{padding:0 .6rem}
+ table,table.align,.marks{display:block;overflow-x:auto;max-width:100%}
+ img{max-width:100%;height:auto}
+ .ctl select{font-size:.9rem}
+}
 </style></head>
 <body><main><h1>Evening Prayer: Music</h1><p class="sub">Saturday, October 24, 2026</p>
 <ol class="toc"><li><a href="#p0">Magnificat</a> and Gloria Patri</li><li><a href="#p1">Nunc Dimittis</a> and Gloria Patri</li></ol>
@@ -471,4 +488,7 @@ hs.forEach(function(B){ var a=B.querySelector('audio'), pp=B.querySelector('.pp'
   function upd(){ var m=/note (\d+)\//.exec(tmE.textContent||''), on=st.querySelector('i.b.on');
     if(!m||!on){ mk.style.display='none'; mk.removeAttribute('data-n'); return; } var n=(+m[1]-1)%10; mk.style.display='block'; mk.style.left=(NX[n]-W/2)+'%'; mk.setAttribute('data-n',n); }
   new MutationObserver(upd).observe(B,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class']}); upd(); });
-})();</script></body></html>
+})();</script><!-- ben-phone-view --><script>(function(){if(!window.matchMedia)return;document.querySelectorAll('.hymn .scorebox').forEach(function(b){
+var k=document.createElement('button');k.type='button';k.className='zoomb';k.textContent='Larger music ↔';
+k.onclick=function(){var on=b.classList.toggle('big');k.textContent=on?'Fit music to screen':'Larger music ↔';};
+b.parentNode.insertBefore(k,b);});})();</script></body></html>
