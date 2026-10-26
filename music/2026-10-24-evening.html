@@ -491,4 +491,13 @@ hs.forEach(function(B){ var a=B.querySelector('audio'), pp=B.querySelector('.pp'
 })();</script><!-- ben-phone-view --><script>(function(){if(!window.matchMedia)return;document.querySelectorAll('.hymn .scorebox').forEach(function(b){
 var k=document.createElement('button');k.type='button';k.className='zoomb';k.textContent='Larger music ↔';
 k.onclick=function(){var on=b.classList.toggle('big');k.textContent=on?'Fit music to screen':'Larger music ↔';};
-b.parentNode.insertBefore(k,b);});})();</script></body></html>
+b.parentNode.insertBefore(k,b);
+var hold=0;function man(){hold=Date.now()+3000;}
+b.addEventListener('touchstart',man,{passive:true});b.addEventListener('wheel',man,{passive:true});b.addEventListener('pointerdown',function(e){if(e.pointerType!=='mouse')man();});
+var blk=b.closest('.blk'),au=blk&&blk.querySelector('audio'),bh=blk&&blk.querySelector('.bh');
+function tick(){if(au&&!au.paused&&b.classList.contains('big')&&Date.now()>hold){var h=b.querySelector('.hl-col');
+if(h){var r=h.getBoundingClientRect(),br=b.getBoundingClientRect();if(r.width>0){
+var want=b.scrollLeft+(r.left-br.left)-br.width/3,d=want-b.scrollLeft;if(Math.abs(d)>2)b.scrollLeft+=d*0.15;
+var top=bh?bh.getBoundingClientRect().bottom+8:8;if(r.top<top||r.bottom>window.innerHeight-8)window.scrollBy(0,(r.top-top)*0.15);}}}
+requestAnimationFrame(tick);}requestAnimationFrame(tick);
+});})();</script></body></html>
