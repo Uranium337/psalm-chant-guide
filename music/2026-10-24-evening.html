@@ -112,11 +112,15 @@ svg.score g.nh.hot{color:#b3121b} svg.score g.ls.hot{color:#b3121b;font-weight:b
 .st .sn{position:absolute;left:.45rem;top:.35rem;font-weight:bold;color:var(--red)}
 .st.cur{background:var(--hi);box-shadow:0 0 0 2px #f3c460}
 </style><!-- ben-phone-view --><style id="ben-phone">
+/* Back/Next: fixed to the bottom of the viewport for the active chant. */
+.ben-tapstick.is-fixed{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;padding:.45rem .8rem calc(.5rem + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule,#ddd);box-shadow:0 -3px 8px -4px rgba(0,0,0,.28);box-sizing:border-box;width:100%;max-width:46rem;margin-left:auto;margin-right:auto}
+html{scroll-padding-bottom:5.25rem}
+.m-tap .bb,.blk.hymn .bb{padding-bottom:4.75rem}
 .zoomb{display:none}
 @media (max-width:700px){
  body{font-size:17px}
  main{padding-left:.5rem;padding-right:.5rem}
- html,body{overflow-x:hidden}
+ html,body{overflow-x:clip}
  .blk{margin-left:-.2rem;margin-right:-.2rem}
  .hymn .bb{padding-left:0;padding-right:0}
  .hymn .scorebox{width:calc(100vw - .2rem);margin-left:calc(50% - 50vw + .1rem);overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
@@ -127,6 +131,7 @@ svg.score g.nh.hot{color:#b3121b} svg.score g.ls.hot{color:#b3121b;font-weight:b
  table,table.align,.marks{display:block;overflow-x:auto;max-width:100%}
  img{max-width:100%;height:auto}
  .ctl select{font-size:.9rem}
+ .ben-tapstick.is-fixed{padding-left:.55rem;padding-right:.55rem;max-width:none}
 }
 </style></head>
 <body><main><h1>Evening Prayer: Music</h1><p class="sub">Saturday, October 24, 2026</p>
@@ -488,16 +493,51 @@ hs.forEach(function(B){ var a=B.querySelector('audio'), pp=B.querySelector('.pp'
   function upd(){ var m=/note (\d+)\//.exec(tmE.textContent||''), on=st.querySelector('i.b.on');
     if(!m||!on){ mk.style.display='none'; mk.removeAttribute('data-n'); return; } var n=(+m[1]-1)%10; mk.style.display='block'; mk.style.left=(NX[n]-W/2)+'%'; mk.setAttribute('data-n',n); }
   new MutationObserver(upd).observe(B,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class']}); upd(); });
-})();</script><!-- ben-phone-view --><script>(function(){if(!window.matchMedia)return;document.querySelectorAll('.hymn .scorebox').forEach(function(b){
+})();</script><!-- ben-phone-view --><script>(function(){
+function stickTapbars(){
+  var items=[];
+  document.querySelectorAll('.blk').forEach(function(blk){
+    var tb=blk.querySelector('.tapbar');
+    if(!tb) return;
+    tb.classList.add('ben-tapstick');
+    items.push({blk:blk,tb:tb});
+  });
+  if(!items.length) return;
+  function shown(el){
+    var st=window.getComputedStyle(el);
+    return st.display!=='none' && st.visibility!=='hidden';
+  }
+  function pick(){
+    var best=null, score=-1, vh=window.innerHeight;
+    items.forEach(function(it){
+      it.tb.classList.remove('is-fixed');
+      if(!shown(it.tb)) return;
+      var r=it.blk.getBoundingClientRect();
+      var overlap=Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
+      if(overlap>score){ score=overlap; best=it; }
+    });
+    if(best && score>60) best.tb.classList.add('is-fixed');
+  }
+  document.addEventListener('scroll', pick, {passive:true});
+  window.addEventListener('resize', pick);
+  var mo=new MutationObserver(pick);
+  items.forEach(function(it){ mo.observe(it.blk, {attributes:true, attributeFilter:['class']}); });
+  pick();
+}
+stickTapbars();
+if(!window.matchMedia)return;
+document.querySelectorAll('.hymn .scorebox').forEach(function(b){
 var k=document.createElement('button');k.type='button';k.className='zoomb';k.textContent='Larger music ↔';
 k.onclick=function(){var on=b.classList.toggle('big');k.textContent=on?'Fit music to screen':'Larger music ↔';};
 b.parentNode.insertBefore(k,b);
 var hold=0;function man(){hold=Date.now()+3000;}
 b.addEventListener('touchstart',man,{passive:true});b.addEventListener('wheel',man,{passive:true});b.addEventListener('pointerdown',function(e){if(e.pointerType!=='mouse')man();});
 var blk=b.closest('.blk'),au=blk&&blk.querySelector('audio'),bh=blk&&blk.querySelector('.bh');
+function botPad(){var t=blk&&blk.querySelector('.ben-tapstick.is-fixed');if(!t)return 8;return (t.getBoundingClientRect().height||0)+8;}
 function tick(){if(au&&!au.paused&&b.classList.contains('big')&&Date.now()>hold){var h=b.querySelector('.hl-col');
 if(h){var r=h.getBoundingClientRect(),br=b.getBoundingClientRect();if(r.width>0){
 var want=b.scrollLeft+(r.left-br.left)-br.width/3,d=want-b.scrollLeft;if(Math.abs(d)>2)b.scrollLeft+=d*0.15;
-var top=bh?bh.getBoundingClientRect().bottom+8:8;if(r.top<top||r.bottom>window.innerHeight-8)window.scrollBy(0,(r.top-top)*0.15);}}}
+var top=bh?bh.getBoundingClientRect().bottom+8:8;if(r.top<top||r.bottom>window.innerHeight-botPad())window.scrollBy(0,(r.top-top)*0.15);}}}
 requestAnimationFrame(tick);}requestAnimationFrame(tick);
-});})();</script></body></html>
+});
+})();</script></body></html>
