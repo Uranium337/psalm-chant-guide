@@ -5,10 +5,11 @@
  "note": "Music supplement only; the service handoffs are not changed by this.",
  "morning": {
   "file": "2026-10-27-morning-music.html",
-  "bytes": 9617718,
+  "bytes": 11687736,
   "pieces": [
    "Psalm 67",
    "Praise (Treasury 836)",
+   "Hymn of Praise (Treasury 810)",
    "Postlude (Treasury 222)"
   ],
   "warnings": []
