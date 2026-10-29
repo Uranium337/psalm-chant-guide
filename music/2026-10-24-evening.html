@@ -115,6 +115,7 @@ svg.score g.nh.hot{color:#b3121b} svg.score g.ls.hot{color:#b3121b;font-weight:b
 /* Back/Next: fixed to the bottom of the viewport for the active chant. */
 .ben-tapstick.is-fixed{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;padding:.45rem .8rem calc(.5rem + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule,#ddd);box-shadow:0 -3px 8px -4px rgba(0,0,0,.28);box-sizing:border-box;width:100%;max-width:46rem;margin-left:auto;margin-right:auto}
 html{scroll-padding-bottom:5.25rem}
+.ben-tapph{height:0;overflow-anchor:none}.ben-tapstick{overflow-anchor:none}
 .m-tap .bb,.blk.hymn .bb{padding-bottom:4.75rem}
 .zoomb{display:none}
 @media (max-width:700px){
@@ -265,7 +266,10 @@ function renderHold(part,snd,note,secs,sr){ sr=sr||44100; var oc=new (window.Off
    .then(function(b){ var x=b.getChannelData(0), pk=0; for(var i=0;i<x.length;i++){ var v=Math.abs(x[i]); if(v>pk) pk=v; } return {buf:b,peak:pk}; }); }
 
 /* ---------- players ---------- */
-var players=[], active=null;
+var players=[], active=null, userHold=0, userHoldSkip=0;
+function handScroll(){ userHold=Date.now()+4000; }
+['touchstart','touchmove','wheel'].forEach(function(t){ window.addEventListener(t,handScroll,{passive:true}); });
+window.addEventListener('keydown',function(e){ if(/^(ArrowUp|ArrowDown|PageUp|PageDown|Home|End| )$/.test(e.key)) handScroll(); });
 function fmt(s){ s=Math.max(0,Math.floor(s+1e-6)); return Math.floor(s/60)+':'+('0'+s%60).slice(-2); }
 function Player(B){
   var me=this; this.B=B; players.push(this);
@@ -388,8 +392,7 @@ function Player(B){
     if(vs){ vs.classList.add('cur');
       [].forEach.call(vs.querySelectorAll('.w'),function(w){ if((' '+w.getAttribute('data-n')+' ').indexOf(' '+L.note+' ')>=0) w.classList.add('on'); });
       if(L.y>=0){ var ye=vs.querySelector('.y[data-y="'+L.y+'"]'); if(ye) ye.classList.add('now'); }
-      if((playing||tapOn)&&L.v!==lastV){ var r=vs.getBoundingClientRect(), top=ui.bh.getBoundingClientRect().bottom;
-        if(r.top<top||r.bottom>window.innerHeight){ document.documentElement.style.setProperty('--bh',(ui.bh.offsetHeight+8)+'px'); vs.scrollIntoView({block:'start',behavior:'smooth'}); } } }
+      if(playing||tapOn) follow(vs); }
     lastV=L.v;
     qa('tr[data-n]').forEach(function(tr){ if((' '+tr.getAttribute('data-n')+' ').indexOf(' '+L.note+' ')>=0) tr.classList.add('on'); });
     var bar=D.barOf[L.note], bx=B.querySelector('.staff i.b[data-bar="'+bar+'"]'); if(bx) bx.classList.add('on');
@@ -398,6 +401,13 @@ function Player(B){
     var txt=lab+(L.note<4?'first half':'second half')+' · bar '+bar+(rec?' · reciting note':'')+' · '+who+nm;
     if(tap) txt+=tapOn?'. Sing the lit words, then Next.':'. Press Next (or any key) to sound it.';
     ui.st.textContent=txt; }
+  // keep the words being sung on screen (only this chant, only while it is really sounding; waits after a hand scroll)
+  function follow(vs){ if(active!==me||Date.now()<userHold) return;
+    var el=vs.querySelector('.y.now')||vs.querySelector('.w.on')||vs, r=el.getBoundingClientRect(), vh=document.documentElement.clientHeight||window.innerHeight;
+    var top=Math.max(0,ui.bh.getBoundingClientRect().bottom)+8, fx=document.querySelector('.ben-tapstick.is-fixed'), bot=vh-(fx?fx.getBoundingClientRect().height:0)-8;
+    if(r.top>=top&&r.bottom<=bot) return;
+    var want=top+(bot-top)*0.25, d=r.top-want; if(Math.abs(d)<4) return;
+    userHoldSkip=Date.now()+900; window.scrollTo({top:window.pageYOffset+d,behavior:'smooth'}); }
   function tick(){ paint(); if(playing) raf=requestAnimationFrame(tick); }
   this.paint=function(){ last=''; paint(); };
   B.__chant={get T(){return S.T;},get R(){return S.R;},get part(){return S.part;},get snd(){return S.snd;},get mode(){return S.mode;},get tl(){return tl;},get ev(){return ev;},
@@ -507,20 +517,27 @@ function stickTapbars(){
     var st=window.getComputedStyle(el);
     return st.display!=='none' && st.visibility!=='hidden';
   }
-  function pick(){
-    var best=null, score=-1, vh=window.innerHeight;
-    items.forEach(function(it){
-      it.tb.classList.remove('is-fixed');
-      if(!shown(it.tb)) return;
-      var r=it.blk.getBoundingClientRect();
-      var overlap=Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
-      if(overlap>score){ score=overlap; best=it; }
-    });
-    if(best && score>60) best.tb.classList.add('is-fixed');
-  }
-  document.addEventListener('scroll', pick, {passive:true});
-  window.addEventListener('resize', pick);
-  var mo=new MutationObserver(pick);
+  /* No feedback loop: a placeholder keeps the bar's space in the page while it is pinned, so pinning never
+     changes the layout; the pinned bar only changes when another chant clearly fills more of the screen
+     (hysteresis); classes are only touched when the choice really changes; one check per frame. */
+  items.forEach(function(it){ var ph=document.createElement('div'); ph.className='ben-tapph'; ph.setAttribute('aria-hidden','true');
+    it.tb.parentNode.insertBefore(ph,it.tb.nextSibling); it.ph=ph; });
+  var cur=null, queued=false;
+  function overlapOf(it){ if(!shown(it.tb)) return -1; var r=it.blk.getBoundingClientRect(), vh=document.documentElement.clientHeight||window.innerHeight;
+    return Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)); }
+  function setCur(it){ if(it===cur) return;
+    if(cur){ cur.tb.classList.remove('is-fixed'); cur.ph.style.height='0px'; }
+    if(it){ var h=it.tb.offsetHeight; it.ph.style.height=h+'px'; it.tb.classList.add('is-fixed'); }
+    cur=it; }
+  function pick(){ queued=false;
+    var best=null, score=-1, cs=cur?overlapOf(cur):-1;
+    items.forEach(function(it){ var o=overlapOf(it); if(o>score){ score=o; best=it; } });
+    if(cur && cs>60 && best!==cur && score<cs+120) best=cur;      // hysteresis
+    setCur(best && (best===cur ? cs>40 : score>60) ? best : null); }
+  function req(){ if(!queued){ queued=true; requestAnimationFrame(pick); } }
+  document.addEventListener('scroll', req, {passive:true});
+  window.addEventListener('resize', req);
+  var mo=new MutationObserver(req);
   items.forEach(function(it){ mo.observe(it.blk, {attributes:true, attributeFilter:['class']}); });
   pick();
 }
