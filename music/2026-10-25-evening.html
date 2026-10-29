@@ -266,10 +266,11 @@ function renderHold(part,snd,note,secs,sr){ sr=sr||44100; var oc=new (window.Off
    .then(function(b){ var x=b.getChannelData(0), pk=0; for(var i=0;i<x.length;i++){ var v=Math.abs(x[i]); if(v>pk) pk=v; } return {buf:b,peak:pk}; }); }
 
 /* ---------- players ---------- */
-var players=[], active=null, userHold=0, userHoldSkip=0;
+var players=[], active=null, userHold=0, progScroll=0;
 function handScroll(){ userHold=Date.now()+4000; }
-['touchstart','touchmove','wheel'].forEach(function(t){ window.addEventListener(t,handScroll,{passive:true}); });
-window.addEventListener('keydown',function(e){ if(/^(ArrowUp|ArrowDown|PageUp|PageDown|Home|End| )$/.test(e.key)) handScroll(); });
+// only a finger dragging or a wheel counts as scrolling by hand (not taps, not the page's own scrolling)
+['touchmove','wheel'].forEach(function(t){ window.addEventListener(t,handScroll,{passive:true}); });
+window.addEventListener('keydown',function(e){ if(/^(ArrowUp|ArrowDown|PageUp|PageDown|Home|End)$/.test(e.key)) handScroll(); });
 function fmt(s){ s=Math.max(0,Math.floor(s+1e-6)); return Math.floor(s/60)+':'+('0'+s%60).slice(-2); }
 function Player(B){
   var me=this; this.B=B; players.push(this);
@@ -392,7 +393,7 @@ function Player(B){
     if(vs){ vs.classList.add('cur');
       [].forEach.call(vs.querySelectorAll('.w'),function(w){ if((' '+w.getAttribute('data-n')+' ').indexOf(' '+L.note+' ')>=0) w.classList.add('on'); });
       if(L.y>=0){ var ye=vs.querySelector('.y[data-y="'+L.y+'"]'); if(ye) ye.classList.add('now'); }
-      if(playing||tapOn) follow(vs); }
+      if(tapOn) follow(); }
     lastV=L.v;
     qa('tr[data-n]').forEach(function(tr){ if((' '+tr.getAttribute('data-n')+' ').indexOf(' '+L.note+' ')>=0) tr.classList.add('on'); });
     var bar=D.barOf[L.note], bx=B.querySelector('.staff i.b[data-bar="'+bar+'"]'); if(bx) bx.classList.add('on');
@@ -401,14 +402,24 @@ function Player(B){
     var txt=lab+(L.note<4?'first half':'second half')+' · bar '+bar+(rec?' · reciting note':'')+' · '+who+nm;
     if(tap) txt+=tapOn?'. Sing the lit words, then Next.':'. Press Next (or any key) to sound it.';
     ui.st.textContent=txt; }
-  // keep the words being sung on screen (only this chant, only while it is really sounding; waits after a hand scroll)
-  function follow(vs){ if(active!==me||Date.now()<userHold) return;
-    var el=vs.querySelector('.y.now')||vs.querySelector('.w.on')||vs, r=el.getBoundingClientRect(), vh=document.documentElement.clientHeight||window.innerHeight;
-    var top=Math.max(0,ui.bh.getBoundingClientRect().bottom)+8, fx=document.querySelector('.ben-tapstick.is-fixed'), bot=vh-(fx?fx.getBoundingClientRect().height:0)-8;
-    if(r.top>=top&&r.bottom<=bot) return;
-    var want=top+(bot-top)*0.25, d=r.top-want; if(Math.abs(d)<4) return;
-    userHoldSkip=Date.now()+900; window.scrollTo({top:window.pageYOffset+d,behavior:'smooth'}); }
-  function tick(){ paint(); if(playing) raf=requestAnimationFrame(tick); }
+  // keep the words being sung on screen while this chant really plays: proactive, instant-step scrolling of the real scroller
+  var fLine=null, fAnim=0;
+  function scroller(el){ for(var p=el.parentElement;p&&p!==document.body&&p!==document.documentElement;p=p.parentElement){
+      var st=getComputedStyle(p); if(/(auto|scroll)/.test(st.overflowY)&&p.scrollHeight>p.clientHeight+2) return p; } return null; }
+  function glide(sc,d){ cancelAnimationFrame(fAnim); var t0s=performance.now(), done=0, dur=Math.min(450,180+Math.abs(d)*0.4);
+    (function step(){ var k=Math.min(1,(performance.now()-t0s)/dur), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2, want=Math.round(d*e), dd=want-done; done=want;
+      progScroll=Date.now()+150; if(dd){ if(sc) sc.scrollTop+=dd; else window.scrollTo({left:window.pageXOffset,top:window.pageYOffset+dd,behavior:'instant'}); }
+      if(k<1) fAnim=requestAnimationFrame(step); })(); }
+  function follow(){ if(!playing&&!tapOn) return; if(active!==me||Date.now()<userHold) return;
+    var vs=B.querySelector('.vs.cur'); if(!vs) return;
+    var el=vs.querySelector('.y.now')||vs.querySelector('.w.on')||vs, r=el.getBoundingClientRect(); if(!r.height) return;
+    var vv=window.visualViewport, vh=vv?vv.height:(document.documentElement.clientHeight||window.innerHeight);
+    var hb=ui.bh.getBoundingClientRect(), top=(hb.top<=1&&hb.bottom>0&&hb.bottom<vh*0.4?hb.bottom:0)+8;
+    var fx=document.querySelector('.ben-tapstick.is-fixed'), bot=vh-(fx?fx.getBoundingClientRect().height:0)-8, span=Math.max(80,bot-top);
+    var lineChanged=vs!==fLine; fLine=vs;
+    var want=top+span*0.3, d=r.top-want;
+    if(r.bottom>top+span*0.6||r.top<top||(lineChanged&&Math.abs(d)>span*0.12)){ if(Math.abs(d)>3) glide(scroller(el),d); } }
+  function tick(){ paint(); follow(); if(playing) raf=requestAnimationFrame(tick); }
   this.paint=function(){ last=''; paint(); };
   B.__chant={get T(){return S.T;},get R(){return S.R;},get part(){return S.part;},get snd(){return S.snd;},get mode(){return S.mode;},get tl(){return tl;},get ev(){return ev;},
     get tap(){ return {play:tp.play,note:tp.note,on:tapOn,held:Object.keys(held).length}; },
