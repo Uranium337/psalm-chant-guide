@@ -1,0 +1,26 @@
+{
+ "bot": "greg",
+ "date": "2026-11-01",
+ "private": "Treasury music: not to be shared or published without permission",
+ "note": "Music supplement only; the service handoffs are not changed by this.",
+ "morning": {
+  "file": "2026-11-01-morning-music.html",
+  "bytes": 8964424,
+  "pieces": [
+   "Psalm 72",
+   "Postlude (Treasury 222)"
+  ],
+  "warnings": [
+   "Prayer of Reflection: treasury-1031-sine-nomine.png has no recording/recipe yet"
+  ]
+ },
+ "evening": {
+  "file": "2026-11-01-evening-music.html",
+  "bytes": 7928946,
+  "pieces": [
+   "Magnificat",
+   "Nunc Dimittis"
+  ],
+  "warnings": []
+ }
+}
