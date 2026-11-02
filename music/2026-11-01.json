@@ -5,9 +5,11 @@
  "note": "Music supplement only; the service handoffs are not changed by this.",
  "morning": {
   "file": "2026-11-01-morning-music.html",
-  "bytes": 10989622,
+  "bytes": 12399277,
   "pieces": [
    "Psalm 72",
+   "Adoration (Treasury 551)",
+   "Praise (Treasury 920)",
    "Prayer of Reflection (Treasury 1031)",
    "Postlude (Treasury 222)"
   ],
