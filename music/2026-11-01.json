@@ -5,14 +5,13 @@
  "note": "Music supplement only; the service handoffs are not changed by this.",
  "morning": {
   "file": "2026-11-01-morning-music.html",
-  "bytes": 8964424,
+  "bytes": 10989622,
   "pieces": [
    "Psalm 72",
+   "Prayer of Reflection (Treasury 1031)",
    "Postlude (Treasury 222)"
   ],
-  "warnings": [
-   "Prayer of Reflection: treasury-1031-sine-nomine.png has no recording/recipe yet"
-  ]
+  "warnings": []
  },
  "evening": {
   "file": "2026-11-01-evening-music.html",
