@@ -1,0 +1,26 @@
+{
+ "bot": "greg",
+ "date": "2026-11-06",
+ "private": "Treasury music: not to be shared or published without permission",
+ "note": "Music supplement only; the service handoffs are not changed by this.",
+ "morning": {
+  "file": "2026-11-06-morning-music.html",
+  "bytes": 11247346,
+  "pieces": [
+   "Psalm 77",
+   "Praise (Treasury 1074)",
+   "Hymn of Praise (Treasury 964)",
+   "Postlude (Treasury 222)"
+  ],
+  "warnings": []
+ },
+ "evening": {
+  "file": "2026-11-06-evening-music.html",
+  "bytes": 7928946,
+  "pieces": [
+   "Magnificat",
+   "Nunc Dimittis"
+  ],
+  "warnings": []
+ }
+}
